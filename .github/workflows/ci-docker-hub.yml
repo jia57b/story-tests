@@ -1,15 +1,15 @@
 name: -> PUSH to GitHub Container Registry
 
-on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Tag version to use if triggered manually'
-        required: true
-        default: 'latest'
-  push:
-    tags:
-      - '*'
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       version:
+#         description: 'Tag version to use if triggered manually'
+#         required: true
+#         default: 'latest'
+#   push:
+#     tags:
+#       - '*'
 
 jobs:
   # Build and upload the geth binary

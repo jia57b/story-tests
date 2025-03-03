@@ -1,0 +1,22 @@
+name: Trigger Tests
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  trigger-l1-tests:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger L1 Tests
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const response = await github.repos.createDispatchEvent({
+              owner: 'jia57b',
+              repo: 'l1-tests',
+              event_type: 'run-tests'
+            });
+            console.log(response);
