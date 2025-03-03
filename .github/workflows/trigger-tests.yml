@@ -11,9 +11,9 @@ jobs:
     steps:
       - name: print token
         run: |
-        echo ${{ secrets.GITHUB_TOKEN }}
-        echo ${{ secrets.CPAT }}
-        echo ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          echo ${{ secrets.GITHUB_TOKEN }}
+          echo ${{ secrets.CPAT }}
+          echo ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
 
       - name: Trigger L1 Tests
         uses: actions/github-script@v6
