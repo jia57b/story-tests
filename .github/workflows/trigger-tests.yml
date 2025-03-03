@@ -14,9 +14,13 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const response = await github.repos.createDispatchEvent({
-              owner: 'jia57b',
-              repo: 'l1-tests',
-              event_type: 'run-tests'
-            });
-            console.log(response);
+            try {
+              const response = await github.rest.repos.createDispatchEvent({
+                owner: 'jia57b',
+                repo: 'l1-tests',
+                event_type: 'run-tests'
+              });
+              console.log(response);
+            } catch (error) {
+              console.error('Error:', error);
+            }
