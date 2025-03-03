@@ -1,8 +1,8 @@
-name: Trigger Tests 5
+name: Trigger Tests 6
 
 on:
   pull_request:
-    types: [closed]
+    types: [closed, opened, synchronize, reopened]
 
 jobs:
   trigger-l1-tests:
@@ -14,6 +14,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            echo "GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}"
+            echo "CPAT: ${{ secrets.CPAT }}"
+            echo "PAT: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
             try {
               const response = await github.rest.repos.createDispatchEvent({
                 owner: 'jia57b',
