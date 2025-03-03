@@ -24,7 +24,11 @@ jobs:
               const response = await github.rest.repos.createDispatchEvent({
                 owner: 'jia57b',
                 repo: 'runTest',
-                event_type: 'run-tests'
+                event_type: 'run-tests',
+                client_payload: {
+                  devnet_version: 'internal-devnet',
+                  deploy_report: 'false'
+                }
               });
               console.log(response);
             } catch (error) {
