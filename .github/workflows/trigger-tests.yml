@@ -15,10 +15,10 @@ jobs:
           echo ${{ secrets.CPAT }}
           echo ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
 
-      - name: Trigger L1 Tests
+      - name: Trigger L1 Tests 1
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
           script: |
             try {
               const response = await github.rest.repos.createDispatchEvent({
