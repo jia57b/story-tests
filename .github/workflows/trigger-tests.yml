@@ -1,4 +1,4 @@
-name: Trigger Tests 4
+name: Trigger Tests 5
 
 on:
   pull_request:
@@ -12,12 +12,12 @@ jobs:
       - name: Trigger L1 Tests
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
               const response = await github.rest.repos.createDispatchEvent({
                 owner: 'jia57b',
-                repo: 'l1-tests',
+                repo: 'runTtest',
                 event_type: 'run-tests'
               });
               console.log(response);
