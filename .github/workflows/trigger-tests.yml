@@ -16,7 +16,7 @@ jobs:
           echo "${{ github.base_ref }}"
           echo "::set-output name=branch::$(echo ${{ github.base_ref }} | cut -d'/' -f3)"
 
-      - name: Trigger L1 Tests
+      - name: Trigger Tests
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
@@ -27,8 +27,9 @@ jobs:
                 repo: 'test-node-launcher',
                 event_type: 'start-test-nodes',
                 client_payload: {
-                  geth_version: 'v1.0.1',
-                  story_version: '${{ steps.base_branch.outputs.branch }}',
+                  geth_version: 'release/1.0',
+                  # story_version: '${{ steps.base_branch.outputs.branch }}',
+                  story_version: 'release/1.1',
                   network_launcher_branch: 'yao/old_timelock/02_08',
                 }
               });
