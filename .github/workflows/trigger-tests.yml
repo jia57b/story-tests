@@ -1,24 +1,39 @@
-name: Trigger Tests 5
+name: Trigger Tests 6
 
 on:
+  push:
+    branches:
+      - jia-6
   pull_request:
-    types: [closed]
+    types: [closed, opened, synchronize, reopened]
 
 jobs:
   trigger-l1-tests:
-    if: github.event.pull_request.merged == true
+    # only run when PR is merged
+    # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger L1 Tests
+      - name: get the PR merged branch
+        id: base_branch
+        run: |
+          echo "${{ github.base_ref }}"
+          echo "::set-output name=branch::$(echo ${{ github.base_ref }} | cut -d'/' -f3)"
+
+      # - name: Trigger L1 Tests
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
           script: |
             try {
               const response = await github.rest.repos.createDispatchEvent({
                 owner: 'jia57b',
-                repo: 'runTtest',
-                event_type: 'run-tests'
+                repo: 'test-node-launcher',
+                event_type: 'start-test-nodes',
+                client_payload: {
+                  geth_version: 'v1.0.1',
+                  story_version: ${{ base_branch.outputs.branch }},
+                  network_launcher_branch: 'yao/old_timelock/02_08',
+                }
               });
               console.log(response);
             } catch (error) {
