@@ -32,6 +32,7 @@ jobs:
                   geth_version: 'release/1.0',
                   story_version: 'release/1.1',
                   network_launcher_branch: 'yao/old_timelock/02_08',
+                  trigger_tests: 'true'
                 }
               });
               console.log(response);
