@@ -1,9 +1,6 @@
 name: Trigger Tests 6
 
 on:
-  push:
-    branches:
-      - jia-6
   pull_request:
     types: [closed, opened, synchronize, reopened]
 
@@ -20,22 +17,22 @@ jobs:
           echo "::set-output name=branch::$(echo ${{ github.base_ref }} | cut -d'/' -f3)"
 
       # - name: Trigger L1 Tests
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-          script: |
-            try {
-              const response = await github.rest.repos.createDispatchEvent({
-                owner: 'jia57b',
-                repo: 'test-node-launcher',
-                event_type: 'start-test-nodes',
-                client_payload: {
-                  geth_version: 'v1.0.1',
-                  story_version: ${{ base_branch.outputs.branch }},
-                  network_launcher_branch: 'yao/old_timelock/02_08',
-                }
-              });
-              console.log(response);
-            } catch (error) {
-              console.error('Error:', error);
-            }
+      #   uses: actions/github-script@v6
+      #   with:
+      #     github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+      #     script: |
+      #       try {
+      #         const response = await github.rest.repos.createDispatchEvent({
+      #           owner: 'jia57b',
+      #           repo: 'test-node-launcher',
+      #           event_type: 'start-test-nodes',
+      #           client_payload: {
+      #             geth_version: 'v1.0.1',
+      #             story_version: ${{ base_branch.outputs.branch }},
+      #             network_launcher_branch: 'yao/old_timelock/02_08',
+      #           }
+      #         });
+      #         console.log(response);
+      #       } catch (error) {
+      #         console.error('Error:', error);
+      #       }
