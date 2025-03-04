@@ -6,16 +6,15 @@ on:
 
 jobs:
   trigger-l1-tests:
+    # only run when PR is merged
     # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: print token
-        run: |
-          echo ${{ secrets.GITHUB_TOKEN }}
-          echo ${{ secrets.CPAT }}
-          echo ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+      - name: get the PR merged branch
+        id: get_branch
+        run: echo "::set-output name=branch::$(echo $GITHUB_REF | cut -d'/' -f3)"
 
-      - name: Trigger L1 Tests 1
+      - name: Trigger L1 Tests
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
@@ -23,11 +22,12 @@ jobs:
             try {
               const response = await github.rest.repos.createDispatchEvent({
                 owner: 'jia57b',
-                repo: 'runTest',
-                event_type: 'run-tests',
+                repo: 'test-node-launcher',
+                event_type: 'start-test-nodes',
                 client_payload: {
-                  devnet_version: 'internal-devnet',
-                  deploy_report: 'false'
+                  geth_version: 'v1.0.1',
+                  story_version: ${{ get_branch.outputs.branch }},
+                  network_launcher_branch: 'yao/old_timelock/02_08',
                 }
               });
               console.log(response);
