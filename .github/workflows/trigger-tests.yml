@@ -1,4 +1,4 @@
-name: Trigger Tests 11
+name: Trigger Tests 12
 
 on:
   pull_request:
@@ -30,7 +30,7 @@ jobs:
                 event_type: 'start-test-nodes',
                 client_payload: {
                   geth_version: 'release/1.0',
-                  story_version: 'release/1.1',
+                  story_version: '${{ steps.base_branch.outputs.branch }}',
                   network_launcher_branch: 'yao/old_timelock/02_08',
                   trigger_tests: 'true'
                 }
