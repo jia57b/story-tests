@@ -15,6 +15,8 @@ jobs:
         run: |
           echo "${{ github.base_ref }}"
           echo "::set-output name=branch::$(echo ${{ github.base_ref }} | cut -d'/' -f3)"
+          # story_version: '${{ steps.base_branch.outputs.branch }}'
+
 
       - name: Trigger Tests
         uses: actions/github-script@v6
@@ -28,7 +30,6 @@ jobs:
                 event_type: 'start-test-nodes',
                 client_payload: {
                   geth_version: 'release/1.0',
-                  # story_version: '${{ steps.base_branch.outputs.branch }}',
                   story_version: 'release/1.1',
                   network_launcher_branch: 'yao/old_timelock/02_08',
                 }
