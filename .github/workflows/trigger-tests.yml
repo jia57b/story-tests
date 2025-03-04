@@ -1,4 +1,4 @@
-name: Trigger Tests 6
+name: Trigger Tests 7
 
 on:
   pull_request:
