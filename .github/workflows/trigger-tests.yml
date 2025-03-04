@@ -1,6 +1,9 @@
 name: Trigger Tests 6
 
 on:
+  push:
+    branches:
+      - jia-6
   pull_request:
     types: [closed, opened, synchronize, reopened]
 
