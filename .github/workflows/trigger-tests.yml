@@ -10,7 +10,7 @@ jobs:
     # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      - name: get the PR merged branch
+      - name: get the PR base branch
         id: base_branch
         run: |
           echo "${{ github.base_ref }}"
@@ -28,7 +28,7 @@ jobs:
                 event_type: 'start-test-nodes',
                 client_payload: {
                   geth_version: 'v1.0.1',
-                  story_version: ${{ base_branch.outputs.branch }},
+                  story_version: '${{ steps.base_branch.outputs.branch }}',
                   network_launcher_branch: 'yao/old_timelock/02_08',
                 }
               });
