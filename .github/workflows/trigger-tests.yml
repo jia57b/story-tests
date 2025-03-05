@@ -17,8 +17,27 @@ jobs:
           echo "::set-output name=branch::$(echo ${{ github.base_ref }} | cut -d'/' -f3)"
           # story_version: '${{ steps.base_branch.outputs.branch }}'
 
-
       - name: Trigger Tests
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          script: |
+            try {
+              const response = await github.rest.repos.createDispatchEvent({
+                owner: 'jia57b',
+                repo: 'l1-tests',
+                event_type: 'run-tests',
+                client_payload: {
+                  devnet_version: '${{ needs.Setup-Env.outputs.devnet_repo }}',
+                  deploy_report: true
+                }
+              });
+              console.log(response);
+            } catch (error) {
+              console.error('Error:', error);
+            }
+
+      - name: Trigger test nodes
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
@@ -29,10 +48,8 @@ jobs:
                 repo: 'test-node-launcher',
                 event_type: 'start-test-nodes',
                 client_payload: {
-                  geth_version: 'release/1.0',
                   story_version: '${{ steps.base_branch.outputs.branch }}',
-                  network_launcher_branch: 'yao/old_timelock/02_08',
-                  trigger_tests: 'true'
+                  trigger_tests: 'false'
                 }
               });
               console.log(response);
