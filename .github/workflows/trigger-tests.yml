@@ -19,13 +19,12 @@ jobs:
 
 
       - name: Trigger Tests
-        uses: benc-uk/workflow-dispatch@v1
+        uses: peter-evans/repository-dispatch@v3
         with:
-          workflow: pr-trigger-tests.yml
-          repo: jia57b/l1-tests
-          inputs: '{ "devnet_version": "${{ needs.Setup-Env.outputs.devnet_repo }}", "deploy_report": "false" }'
-          # Required when using the `repo` option. Either a PAT or a token generated from the GitHub app or CLI
-          token: "${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
+          token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          repository: jia57b/l1-tests
+          event-type: run-tests
+          client-payload: '{"devnet_version": "${{ needs.Setup-Env.outputs.devnet_version }}", "deploy_report": "false"}'
 
       # - name: Trigger Tests
       #   uses: actions/github-script@v6
