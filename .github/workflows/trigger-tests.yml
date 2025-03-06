@@ -20,7 +20,7 @@ jobs:
           echo "devnet_version=$devnet_version" >> $GITHUB_OUTPUT
           echo "story_version=$(echo ${{ github.base_ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
-  show-outputs:
+  show-setup-outputs:
     needs: setup
     runs-on: ubuntu-latest
     steps:
@@ -129,7 +129,7 @@ jobs:
   # here is waiting for devnet reset
 
   run-tests:
-    needs: wait-for-testnodes-stop
+    needs: [setup, wait-for-testnodes-stop]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Tests
@@ -145,7 +145,7 @@ jobs:
             }
 
   start-test-nodes:
-    needs: wait-for-testnodes-stop
+    needs: [setup, wait-for-testnodes-stop]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger to start test nodes
