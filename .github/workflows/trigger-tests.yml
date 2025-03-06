@@ -23,7 +23,7 @@ jobs:
         with:
           workflow: pr-trigger-tests.yml
           repo: jia57b/l1-tests
-          inputs: '{ "devnet_version": '${{ needs.Setup-Env.outputs.devnet_repo }}', "deploy_report": 'false' }'
+          inputs: '{ "devnet_version": "${{ needs.Setup-Env.outputs.devnet_repo }}", "deploy_report": "false" }'
           # Required when using the `repo` option. Either a PAT or a token generated from the GitHub app or CLI
           token: "${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
 
