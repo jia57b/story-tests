@@ -128,8 +128,111 @@ jobs:
   
   # here is waiting for devnet reset
 
+  start-test-nodes:
+    needs: [setup, wait-for-testnodes-stop]  # Changed dependency - only depends on stop completion
+    runs-on: ubuntu-latest
+    outputs:
+      workflow_id: ${{ steps.trigger.outputs.workflow_id }}  # Added output for workflow ID
+    steps:
+      - name: Trigger to start test nodes
+        id: trigger  # Added ID to reference in outputs
+        uses: actions/github-script@v6  # Changed to github-script for consistency
+        with:
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          script: |
+            // Trigger the workflow in the target repository
+            await github.rest.repos.createDispatchEvent({
+              owner: 'jia57b',
+              repo: 'test-node-launcher',
+              event_type: 'start-test-nodes',
+              client_payload: {
+                story_version: "${{ needs.setup.outputs.story_version }}",
+                trigger_tests: "false"
+              }
+            });
+            
+            console.log("Triggered start-nodes workflow, waiting...");
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            
+            // get the latest workflow run
+            let runs = [];
+            let attempts = 0;
+            
+            while (runs.length === 0 && attempts < 10) {
+              console.log(`try ${attempts + 1}/10 to get the latest workflow run...`);
+              
+              const workflowRuns = await github.rest.actions.listWorkflowRunsForRepo({
+                owner: 'jia57b',
+                repo: 'test-node-launcher',
+                event: 'repository_dispatch',
+                per_page: 5
+              });
+              
+              runs = workflowRuns.data.workflow_runs.filter(run => 
+                run.created_at > new Date(Date.now() - 60000).toISOString()
+              );
+              
+              if (runs.length === 0) {
+                console.log("Not find the runs, retrying...");
+                await new Promise(resolve => setTimeout(resolve, 3000));
+              }
+              
+              attempts++;
+            }
+            
+            if (runs.length > 0) {
+              runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+              const workflowId = runs[0].id;
+              console.log(`the latest workflow: ${workflowId}, name: ${runs[0].name}, event: ${runs[0].event}`);
+              core.setOutput("workflow_id", workflowId);
+            } else {
+              core.setFailed("cannot find the latest workflow run");
+            }
+
+  wait-for-testnodes-start:
+    needs: start-test-nodes  # New job that depends on start-test-nodes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Waiting for start workflow to complete
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          script: |
+            const workflowId = ${{ needs.start-test-nodes.outputs.workflow_id }};
+            let status = "queued";
+            let attempts = 0;
+            const maxAttempts = 180; // 30 minutes timeout (180 * 10 seconds)
+            
+            console.log(`Waiting for node start workflow ${workflowId} to complete...`);
+            
+            while ((status === "queued" || status === "in_progress") && attempts < maxAttempts) {
+              attempts++;
+              await new Promise(resolve => setTimeout(resolve, 10000)); // checking every 10 seconds
+              
+              const { data } = await github.rest.actions.getWorkflowRun({
+                owner: 'jia57b',
+                repo: 'test-node-launcher',
+                run_id: workflowId
+              });
+              
+              status = data.status;
+              console.log(`Attempt ${attempts}/${maxAttempts}: start workflow status: ${status} (${data.conclusion || 'running'})`);
+              
+              if (status === "completed" && data.conclusion !== "success") {
+                core.setFailed(`Remote start workflow completed but with result: ${data.conclusion}`);
+                return;
+              }
+            }
+            
+            if (attempts >= maxAttempts) {
+              core.setFailed(`Timeout waiting for start workflow to complete. Waited ${maxAttempts * 10} seconds.`);
+              return;
+            }
+            
+            console.log("Remote node start workflow succeeded!");
+
   run-tests:
-    needs: [setup, wait-for-testnodes-stop]
+    needs: [setup, wait-for-testnodes-start]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Tests
@@ -144,45 +247,19 @@ jobs:
               "deploy_report": "true"
             }
 
-  start-test-nodes:
-    needs: [setup, wait-for-testnodes-stop]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger to start test nodes
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-          repository: jia57b/test-node-launcher
-          event-type: start-test-nodes
-          client-payload: |
-            {
-              "story_version": "${{ needs.setup.outputs.story_version }}",
-              "trigger_tests": "false"
-            }
-  
-  # stop-test-nodes:
-  #   needs: setup
+  # start-test-nodes:
+  #   needs: [setup, wait-for-testnodes-stop]
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - name: Trigger to stop test nodes
+  #     - name: Trigger to start test nodes
   #       uses: peter-evans/repository-dispatch@v3
   #       with:
   #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
   #         repository: jia57b/test-node-launcher
-  #         event-type: stop-test-nodes
-
-  # run-tests:
-  #   needs: [setup, stop-test-nodes]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Trigger Tests
-  #       uses: peter-evans/repository-dispatch@v3
-  #       with:
-  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-  #         repository: jia57b/l1-tests
-  #         event-type: run-tests
+  #         event-type: start-test-nodes
   #         client-payload: |
   #           {
-  #             "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
-  #             "deploy_report": "true"
+  #             "story_version": "${{ needs.setup.outputs.story_version }}",
+  #             "trigger_tests": "false"
   #           }
+  
