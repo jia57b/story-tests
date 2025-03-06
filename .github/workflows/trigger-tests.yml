@@ -32,17 +32,117 @@ jobs:
   stop-test-nodes:
     needs: setup
     runs-on: ubuntu-latest
+    outputs:
+      workflow_id: ${{ steps.trigger.outputs.workflow_id }}
     steps:
-      - name: Trigger to stop test nodes
+      - name: Trigger and get workflow ID
+        id: trigger
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          script: |
+            // 触发目标工作流
+            const response = await github.rest.repos.createDispatchEvent({
+              owner: 'jia57b',
+              repo: 'test-node-launcher',
+              event_type: 'stop-test-nodes',
+              client_payload: {
+                node_ip: "3.211.128.164,44.212.106.4"
+              }
+            });
+            
+            // 获取目标仓库最新的工作流运行
+            let runs = [];
+            let attempts = 0;
+            
+            // 可能需要一点时间工作流才会出现，所以轮询几次
+            while (runs.length === 0 && attempts < 10) {
+              await new Promise(resolve => setTimeout(resolve, 3000)); // 等待3秒
+              
+              const workflowRuns = await github.rest.actions.listWorkflowRuns({
+                owner: 'jia57b',
+                repo: 'test-node-launcher',
+                event: 'repository_dispatch',
+                per_page: 1
+              });
+              
+              runs = workflowRuns.data.workflow_runs;
+              attempts++;
+            }
+            
+            if (runs.length > 0) {
+              const workflowId = runs[0].id;
+              console.log(`最新工作流运行ID: ${workflowId}`);
+              core.setOutput("workflow_id", workflowId);
+            } else {
+              core.setFailed("无法获取工作流运行ID");
+            }
+
+  wait-for-workflow:
+    needs: stop-test-nodes
+    runs-on: ubuntu-latest
+    steps:
+      - name: 等待工作流完成
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          script: |
+            const workflowId = ${{ needs.stop-test-nodes.outputs.workflow_id }};
+            let status = "queued";
+            
+            console.log(`正在等待工作流 ${workflowId} 完成...`);
+            
+            while (status === "queued" || status === "in_progress") {
+              await new Promise(resolve => setTimeout(resolve, 10000)); // 每10秒检查一次
+              
+              const { data } = await github.rest.actions.getWorkflowRun({
+                owner: 'jia57b',
+                repo: 'test-node-launcher',
+                run_id: workflowId
+              });
+              
+              status = data.status;
+              console.log(`工作流状态: ${status} (${data.conclusion || 'running'})`);
+              
+              // 如果工作流失败，也结束等待但标记为失败
+              if (status === "completed" && data.conclusion !== "success") {
+                core.setFailed(`远程工作流完成但结果为: ${data.conclusion}`);
+                return;
+              }
+            }
+            
+            console.log("远程工作流已成功完成!");
+
+  run-tests:
+    needs: wait-for-workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Tests
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-          repository: jia57b/test-node-launcher
-          event-type: stop-test-nodes
-          # client-payload: ''
+          repository: jia57b/l1-tests
+          event-type: run-tests
+          client-payload: |
+            {
+              "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
+              "deploy_report": "true"
+            }
+  
+
+  # stop-test-nodes:
+  #   needs: setup
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Trigger to stop test nodes
+  #       uses: peter-evans/repository-dispatch@v3
+  #       with:
+  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+  #         repository: jia57b/test-node-launcher
+  #         event-type: stop-test-nodes
 
   # run-tests:
-  #   needs: 【setup, stop-test-nodes]
+  #   needs: [setup, stop-test-nodes]
   #   runs-on: ubuntu-latest
   #   steps:
   #     - name: Trigger Tests
@@ -72,43 +172,3 @@ jobs:
   #             "story_version": "${{ needs.setup.outputs.story_version }}",
   #             "trigger_tests": "false"
   #           }
-
-      # - name: Trigger Tests
-      #   uses: actions/github-script@v6
-      #   with:
-      #     github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-      #     script: |
-      #       try {
-      #         const response = await github.rest.repos.createDispatchEvent({
-      #           owner: 'jia57b',
-      #           repo: 'l1-tests',
-      #           event_type: 'run-tests',
-      #           client_payload: {
-      #             devnet_version: '${{ needs.Setup-Env.outputs.devnet_repo }}',
-      #             deploy_report: true
-      #           }
-      #         });
-      #         console.log(response);
-      #       } catch (error) {
-      #         console.error('Error:', error);
-      #       }
-
-      # - name: Trigger test nodes
-      #   uses: actions/github-script@v6
-      #   with:
-      #     github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-      #     script: |
-      #       try {
-      #         const response = await github.rest.repos.createDispatchEvent({
-      #           owner: 'jia57b',
-      #           repo: 'test-node-launcher',
-      #           event_type: 'start-test-nodes',
-      #           client_payload: {
-      #             story_version: '${{ steps.base_branch.outputs.branch }}',
-      #             trigger_tests: 'false'
-      #           }
-      #         });
-      #         console.log(response);
-      #       } catch (error) {
-      #         console.error('Error:', error);
-      #       }
