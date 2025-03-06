@@ -24,7 +24,7 @@ jobs:
           token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
           repository: jia57b/l1-tests
           event-type: run-tests
-          client-payload: '{"devnet_version": "${{ needs.Setup-Env.outputs.devnet_version }}", "deploy_report": "false"}'
+          client-payload: '{"devnet_version": "${{ needs.Setup-Env.outputs.devnet_version }}", "deploy_report": "true"}'
 
       - name: Trigger test nodes
         uses: peter-evans/repository-dispatch@v3
