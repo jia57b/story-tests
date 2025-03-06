@@ -41,37 +41,37 @@ jobs:
           event-type: stop-test-nodes
           # client-payload: ''
 
-  run-tests:
-    needs: stop-test-nodes
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Tests
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-          repository: jia57b/l1-tests
-          event-type: run-tests
-          client-payload: |
-            {
-              "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
-              "deploy_report": "true"
-            }
+  # run-tests:
+  #   needs: 【setup, stop-test-nodes]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Trigger Tests
+  #       uses: peter-evans/repository-dispatch@v3
+  #       with:
+  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+  #         repository: jia57b/l1-tests
+  #         event-type: run-tests
+  #         client-payload: |
+  #           {
+  #             "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
+  #             "deploy_report": "true"
+  #           }
 
-  start-test-nodes:
-    needs: stop-test-nodes
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger to start test nodes
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-          repository: jia57b/test-node-launcher
-          event-type: start-test-nodes
-          client-payload: |
-            {
-              "story_version": "${{ needs.setup.outputs.story_version }}",
-              "trigger_tests": "false"
-            }
+  # start-test-nodes:
+  #   needs: [setup, stop-test-nodes]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Trigger to start test nodes
+  #       uses: peter-evans/repository-dispatch@v3
+  #       with:
+  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+  #         repository: jia57b/test-node-launcher
+  #         event-type: start-test-nodes
+  #         client-payload: |
+  #           {
+  #             "story_version": "${{ needs.setup.outputs.story_version }}",
+  #             "trigger_tests": "false"
+  #           }
 
       # - name: Trigger Tests
       #   uses: actions/github-script@v6
