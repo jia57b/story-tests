@@ -21,6 +21,7 @@ jobs:
           geth_version="v1.0.2"
           echo "devnet_version=$devnet_version" >> $GITHUB_OUTPUT
           echo "story_version=$(echo ${{ github.base_ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
+          echo "geth_version=$geth_version" >> $GITHUB_OUTPUT
 
   show-setup-outputs:
     needs: setup
@@ -92,7 +93,7 @@ jobs:
               core.setFailed("cannot find the latest workflow run");
             }
 
-  wait-for-testnodes-stop:
+  wait-test-nodes-stop:
     needs: stop-test-nodes
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +133,7 @@ jobs:
   # here is waiting for devnet reset
 
   start-test-nodes:
-    needs: [setup, wait-for-testnodes-stop]  # Changed dependency - only depends on stop completion
+    needs: [setup, wait-test-nodes-stop]  # Changed dependency - only depends on stop completion
     runs-on: ubuntu-latest
     outputs:
       workflow_id: ${{ steps.trigger.outputs.workflow_id }}  # Added output for workflow ID
@@ -193,7 +194,7 @@ jobs:
               core.setFailed("cannot find the latest workflow run");
             }
 
-  wait-for-testnodes-start:
+  wait-test-nodes-start:
     needs: start-test-nodes
     runs-on: ubuntu-latest
     continue-on-error: true # Continue even if the workflow fails
@@ -236,7 +237,7 @@ jobs:
             console.log("Remote node start workflow succeeded!");
 
   run-tests:
-    needs: [setup, wait-for-testnodes-start]
+    needs: [setup, wait-test-nodes-start]
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Tests
