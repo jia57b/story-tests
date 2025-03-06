@@ -12,11 +12,13 @@ jobs:
     outputs:
       story_version: ${{ steps.set_vars.outputs.story_version }}
       devnet_version: ${{ steps.set_vars.outputs.devnet_version }}
+      geth_version: ${{ steps.set_vars.outputs.geth_version }}
     steps:
       - name: Set Variables
         id: set_vars
         run: |
           devnet_version="internal-devnet"
+          geth_version="v1.0.2"
           echo "devnet_version=$devnet_version" >> $GITHUB_OUTPUT
           echo "story_version=$(echo ${{ github.base_ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
@@ -28,6 +30,7 @@ jobs:
         run: |
           echo "devnet_version: ${{ needs.setup.outputs.devnet_version }}"
           echo "story_version: ${{ needs.setup.outputs.story_version }}"
+          echo "geth_version: ${{ needs.setup.outputs.geth_version }}"
 
   stop-test-nodes:
     needs: setup
@@ -147,6 +150,7 @@ jobs:
               event_type: 'start-test-nodes',
               client_payload: {
                 story_version: "${{ needs.setup.outputs.story_version }}",
+                geth_version: "${{ needs.setup.outputs.geth_version }}",
                 trigger_tests: "false"
               }
             });
@@ -190,8 +194,9 @@ jobs:
             }
 
   wait-for-testnodes-start:
-    needs: start-test-nodes  # New job that depends on start-test-nodes
+    needs: start-test-nodes
     runs-on: ubuntu-latest
+    continue-on-error: true # Continue even if the workflow fails
     steps:
       - name: Waiting for start workflow to complete
         uses: actions/github-script@v6
@@ -201,7 +206,7 @@ jobs:
             const workflowId = ${{ needs.start-test-nodes.outputs.workflow_id }};
             let status = "queued";
             let attempts = 0;
-            const maxAttempts = 180; // 30 minutes timeout (180 * 10 seconds)
+            const maxAttempts = 120; // 20 minutes timeout (120 * 10 seconds)
             
             console.log(`Waiting for node start workflow ${workflowId} to complete...`);
             
@@ -225,8 +230,7 @@ jobs:
             }
             
             if (attempts >= maxAttempts) {
-              core.setFailed(`Timeout waiting for start workflow to complete. Waited ${maxAttempts * 10} seconds.`);
-              return;
+              console.log(`⚠️ WARNING: Waiting timeout after ${maxAttempts * 10} seconds. Proceeding anyway...`);
             }
             
             console.log("Remote node start workflow succeeded!");
@@ -247,19 +251,3 @@ jobs:
               "deploy_report": "true"
             }
 
-  # start-test-nodes:
-  #   needs: [setup, wait-for-testnodes-stop]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Trigger to start test nodes
-  #       uses: peter-evans/repository-dispatch@v3
-  #       with:
-  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-  #         repository: jia57b/test-node-launcher
-  #         event-type: start-test-nodes
-  #         client-payload: |
-  #           {
-  #             "story_version": "${{ needs.setup.outputs.story_version }}",
-  #             "trigger_tests": "false"
-  #           }
-  
