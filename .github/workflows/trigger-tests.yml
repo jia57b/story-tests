@@ -11,13 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       story_version: ${{ steps.set_vars.outputs.story_version }}
+      devnet_version: ${{ steps.set_vars.outputs.devnet_version }}
     steps:
       - name: Set Variables
         id: set_vars
         run: |
           devnet_version="internal-devnet"
           echo "devnet_version=$devnet_version" >> $GITHUB_OUTPUT
-          echo "story_version=$(echo ${{ github.event.pull_request.head.ref }} | cut -d'-' -f3)" >> $GITHUB_OUTPUT
+          echo "story_version=$(echo ${{ github.base_ref }} | cut -d'/' -f3)" >> $GITHUB_OUTPUT
 
   show-outputs:
     needs: setup
@@ -38,7 +39,7 @@ jobs:
           token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
           repository: jia57b/test-node-launcher
           event-type: stop-test-nodes
-          client-payload: ''
+          # client-payload: ''
 
   run-tests:
     needs: stop-test-nodes
