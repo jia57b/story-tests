@@ -41,27 +41,24 @@ jobs:
         with:
           github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
           script: |
-            // 触发目标工作流
+            // Trigger the workflow in the target repository
             await github.rest.repos.createDispatchEvent({
               owner: 'jia57b',
               repo: 'test-node-launcher',
-              event_type: 'stop-test-nodes',
-              client_payload: {
-                node_ip: "3.211.128.164,44.212.106.4"
-              }
+              event_type: 'stop-test-nodes'
             });
             
-            console.log("已触发工作流，等待几秒让工作流启动...");
-            // 等待几秒，确保工作流有时间开始执行
+            console.log("Already trigger workflow, waiting...");
+            // wait for 5 seconds to ensure the workflow is created
             await new Promise(resolve => setTimeout(resolve, 5000));
             
-            // 获取目标仓库最新的工作流运行
+            // get the latest workflow run
             let runs = [];
             let attempts = 0;
             
-            // 轮询等待工作流出现在列表中
+            // try to get the latest workflow run
             while (runs.length === 0 && attempts < 10) {
-              console.log(`尝试 ${attempts + 1}/10 获取最新工作流运行...`);
+              console.log(`try ${attempts + 1}/10 to get the latest workflow run...`);
               
               const workflowRuns = await github.rest.actions.listWorkflowRunsForRepo({
                 owner: 'jia57b',
@@ -71,11 +68,11 @@ jobs:
               });
               
               runs = workflowRuns.data.workflow_runs.filter(run => 
-                run.created_at > new Date(Date.now() - 60000).toISOString() // 获取最近1分钟内创建的
+                run.created_at > new Date(Date.now() - 60000).toISOString() // get the runs created in the last 1 minute
               );
               
               if (runs.length === 0) {
-                console.log("未找到最近的工作流运行，等待3秒后重试...");
+                console.log("Not find the runs, retrying...");
                 await new Promise(resolve => setTimeout(resolve, 3000));
               }
               
@@ -83,19 +80,20 @@ jobs:
             }
             
             if (runs.length > 0) {
-              // 按创建时间排序，获取最新的
+              // get the latest run by created_at
               runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
               const workflowId = runs[0].id;
-              console.log(`最新工作流运行ID: ${workflowId}, 名称: ${runs[0].name}, 事件: ${runs[0].event}`);
+              console.log(`the latest workflow: ${workflowId}, name: ${runs[0].name}, event: ${runs[0].event}`);
               core.setOutput("workflow_id", workflowId);
             } else {
-              core.setFailed("无法获取工作流运行ID");
+              core.setFailed("cannot find the latest workflow run");
             }
-  wait-for-workflow:
+
+  wait-for-testnodes-stop:
     needs: stop-test-nodes
     runs-on: ubuntu-latest
     steps:
-      - name: 等待工作流完成
+      - name: Waiting for workflow to complete
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
@@ -103,10 +101,10 @@ jobs:
             const workflowId = ${{ needs.stop-test-nodes.outputs.workflow_id }};
             let status = "queued";
             
-            console.log(`正在等待工作流 ${workflowId} 完成...`);
+            console.log(`Waiting ${workflowId} complete...`);
             
             while (status === "queued" || status === "in_progress") {
-              await new Promise(resolve => setTimeout(resolve, 10000)); // 每10秒检查一次
+              await new Promise(resolve => setTimeout(resolve, 10000)); // checking every 10 seconds
               
               const { data } = await github.rest.actions.getWorkflowRun({
                 owner: 'jia57b',
@@ -115,19 +113,23 @@ jobs:
               });
               
               status = data.status;
-              console.log(`工作流状态: ${status} (${data.conclusion || 'running'})`);
+              console.log(`workflow status: ${status} (${data.conclusion || 'running'})`);
               
-              // 如果工作流失败，也结束等待但标记为失败
+              // if the workflow is completed but not success, set the action as failed
               if (status === "completed" && data.conclusion !== "success") {
-                core.setFailed(`远程工作流完成但结果为: ${data.conclusion}`);
+                core.setFailed(`remote workflow result: ${data.conclusion}`);
                 return;
               }
             }
             
-            console.log("远程工作流已成功完成!");
+            console.log("Remote workflow succeed!");
+
+  # here is the trigger devnet reset
+  
+  # here is waiting for devnet reset
 
   run-tests:
-    needs: wait-for-workflow
+    needs: wait-for-testnodes-stop
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Tests
@@ -141,8 +143,23 @@ jobs:
               "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
               "deploy_report": "true"
             }
-  
 
+  start-test-nodes:
+    needs: wait-for-testnodes-stop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger to start test nodes
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+          repository: jia57b/test-node-launcher
+          event-type: start-test-nodes
+          client-payload: |
+            {
+              "story_version": "${{ needs.setup.outputs.story_version }}",
+              "trigger_tests": "false"
+            }
+  
   # stop-test-nodes:
   #   needs: setup
   #   runs-on: ubuntu-latest
@@ -168,20 +185,4 @@ jobs:
   #           {
   #             "devnet_version": "${{ needs.setup.outputs.devnet_version }}",
   #             "deploy_report": "true"
-  #           }
-
-  # start-test-nodes:
-  #   needs: [setup, stop-test-nodes]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Trigger to start test nodes
-  #       uses: peter-evans/repository-dispatch@v3
-  #       with:
-  #         token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-  #         repository: jia57b/test-node-launcher
-  #         event-type: start-test-nodes
-  #         client-payload: |
-  #           {
-  #             "story_version": "${{ needs.setup.outputs.story_version }}",
-  #             "trigger_tests": "false"
   #           }
