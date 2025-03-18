@@ -154,71 +154,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify the above workflow was completed successfully
-      id: verify-workflow
-      shell: bash
-      run: |
-        #!/bin/bash
-        set -x
+        id: verify-workflow
+        shell: bash
+        run: |
+          #!/bin/bash
+          set -x
 
-        GITHUB_TOKEN="${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
-        OWNER="jia57b"
-        REPO="test-node-launcher"
-        TRIGGER_EVENT="repository_dispatch"
-        MAX_RETRIES=60
-        SLEEP_INTERVAL=20
+          GITHUB_TOKEN="${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
+          OWNER="jia57b"
+          REPO="test-node-launcher"
+          TRIGGER_EVENT="repository_dispatch"
+          MAX_RETRIES=60
+          SLEEP_INTERVAL=20
 
-        check_workflow_status() {
-          response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?event=${TRIGGER_EVENT}")
-          
-          echo "$response"
+          check_workflow_status() {
+            response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?event=${TRIGGER_EVENT}")
+            
+            echo "$response"
 
-          # Select the live workflow run (with status "in_progress" or "queued") having the highest run_number.
-          run=$(echo "$response" | jq '
-            .workflow_runs
-            | map(select(.status == "in_progress" or .status == "queued"))
-            | sort_by(.run_number)
-            | last
-          ')
-          echo "$run"
-        }
+            # Select the live workflow run (with status "in_progress" or "queued") having the highest run_number.
+            run=$(echo "$response" | jq '
+              .workflow_runs
+              | map(select(.status == "in_progress" or .status == "queued"))
+              | sort_by(.run_number)
+              | last
+            ')
+            echo "$run"
+          }
 
-        attempt=1
-        while [ $attempt -le $MAX_RETRIES ]; do
-          echo "Checking workflow run status (attempt $attempt)..."
-          
-          result=$(check_workflow_status)
-          
-          # If no live run is found, the result will be an empty object "{}"
-          if [ "$(echo "$result" | jq -r 'if . == {} then "empty" else "found" end')" = "empty" ]; then
-            echo "No live workflow run found yet."
-          else
-            run_status=$(echo "$result" | jq -r '.status')
-            run_conclusion=$(echo "$result" | jq -r '.conclusion')
+          attempt=1
+          while [ $attempt -le $MAX_RETRIES ]; do
+            echo "Checking workflow run status (attempt $attempt)..."
+            
+            result=$(check_workflow_status)
+            
+            # If no live run is found, the result will be an empty object "{}"
+            if [ "$(echo "$result" | jq -r 'if . == {} then "empty" else "found" end')" = "empty" ]; then
+              echo "No live workflow run found yet."
+            else
+              run_status=$(echo "$result" | jq -r '.status')
+              run_conclusion=$(echo "$result" | jq -r '.conclusion')
 
-            echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
+              echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
 
-            if [ "$run_status" == "completed" ]; then
-              echo "Workflow run completed with conclusion: ${run_conclusion}"
-              if [ "$run_conclusion" != "success" ]; then
-                echo "Workflow did not succeed. Exiting."
-                exit 1
+              if [ "$run_status" == "completed" ]; then
+                echo "Workflow run completed with conclusion: ${run_conclusion}"
+                if [ "$run_conclusion" != "success" ]; then
+                  echo "Workflow did not succeed. Exiting."
+                  exit 1
+                fi
+                break
               fi
-              break
             fi
+
+            echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
+            sleep $SLEEP_INTERVAL
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -gt $MAX_RETRIES ]; then
+            echo "Workflow run did not complete within the allotted time."
+            exit 1
           fi
 
-          echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
-          sleep $SLEEP_INTERVAL
-          attempt=$((attempt + 1))
-        done
-
-        if [ $attempt -gt $MAX_RETRIES ]; then
-          echo "Workflow run did not complete within the allotted time."
-          exit 1
-        fi
-
-        echo "Proceeding to the next step."
+          echo "Proceeding to the next step."
 
 
   # here is the trigger devnet reset
