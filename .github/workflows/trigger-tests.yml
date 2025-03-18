@@ -163,6 +163,7 @@ jobs:
           OWNER="jia57b"
           REPO="test-node-launcher"
           TRIGGER_EVENT="repository_dispatch"
+          MAX_RETRIES_check_workflow_status=10
           MAX_RETRIES=50
           SLEEP_INTERVAL=20
 
@@ -187,15 +188,26 @@ jobs:
               jq '.'
           }
 
-          result=$(check_workflow_status)
-          echo "--------- print result check_workflow_status----------"
-          echo "$result"
-          
-          # If no live run is found, the result will be an empty object "{}"
-          if [ "$(echo "$result" | jq -r 'if . == {} or . == null then "empty" else "found" end')" = "empty" ]; then
-            echo "No in-progress workflow found. Exiting."
-            exit 1
-          fi
+          attempt_check_workflow_status=1
+          while [ $attempt_check_workflow_status -le $MAX_RETRIES_check_workflow_status ]; do
+            result=$(check_workflow_status)
+            echo "--------- print result check_workflow_status----------"
+            echo "$result"
+            
+            # If no live run is found, the result will be an empty object "{}"
+            if [ "$(echo "$result" | jq -r 'if . == {} or . == null then "empty" else "found" end')" = "empty" ]; then
+              echo "No in-progress workflow found. Waiting for ${SLEEP_INTERVAL} seconds and retry..."
+              sleep $SLEEP_INTERVAL
+              attempt_check_workflow_status=$((attempt_check_workflow_status + 1))
+            else
+              break
+            fi
+
+            if [ $attempt_check_workflow_status -gt $MAX_RETRIES_check_workflow_status ]; then
+              echo "No in-progress workflow found within the allotted time."
+              exit 1
+            fi
+          done
 
           run_status=$(echo "$result" | jq -r '.status')
           run_conclusion=$(echo "$result" | jq -r '.conclusion')
