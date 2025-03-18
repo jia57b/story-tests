@@ -169,8 +169,6 @@ jobs:
           check_workflow_status() {
             response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
               "https://api.github.com/repos/${OWNER}/${REPO}/actions/runs?event=${TRIGGER_EVENT}")
-            
-            echo "$response"
 
             # Select the live workflow run (with status "in_progress" or "queued") having the highest run_number.
             run=$(echo "$response" | jq '
