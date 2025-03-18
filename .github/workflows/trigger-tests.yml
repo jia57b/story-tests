@@ -212,7 +212,7 @@ jobs:
             echo "Current status: ${status_by_id}, conclusion: ${conclusion_by_id}"
 
             if [ "$status_by_id" == "completed" ]; then
-              echo "Workflow run completed with conclusion: ${run_conclusion}"
+              echo "Workflow run completed with conclusion: ${conclusion_by_id}"
               if [ "$conclusion_by_id" != "success" ]; then
                 echo "Workflow did not succeed. Exiting."
                 exit 1
