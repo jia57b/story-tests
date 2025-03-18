@@ -218,11 +218,10 @@ jobs:
               fi
               break
             fi
-          done
 
-          echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
-          sleep $SLEEP_INTERVAL
-          attempt=$((attempt + 1))
+            echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
+            sleep $SLEEP_INTERVAL
+            attempt=$((attempt + 1))
 
           done
 
