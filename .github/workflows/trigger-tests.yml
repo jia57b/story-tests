@@ -189,7 +189,7 @@ jobs:
             echo "$result"
             
             # If no live run is found, the result will be an empty object "{}"
-            if [ "$(echo "$result" | jq -r 'if . == {} then "empty" else "found" end')" = "empty" ]; then
+            if [ "$(echo "$result" | jq -r 'if . == {} or . == null then "empty" else "found" end')" = "empty" ]; then
               echo "No live workflow run found yet."
             else
               run_status=$(echo "$result" | jq -r '.status')
