@@ -202,7 +202,7 @@ jobs:
           echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
 
           run_id=$(echo "$result" | jq -r '.id')
-          echo "Found in_progress workflow with ID: $id"
+          echo "Found in_progress workflow with ID: $run_id"
 
           attempt=1
           while [ $attempt -le $MAX_RETRIES ]; do
@@ -218,7 +218,7 @@ jobs:
               fi
               break
             fi
-          fi
+          done
 
           echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
           sleep $SLEEP_INTERVAL
