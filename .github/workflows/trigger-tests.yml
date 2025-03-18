@@ -158,7 +158,6 @@ jobs:
         shell: bash
         run: |
           #!/bin/bash
-          set -x
 
           GITHUB_TOKEN="${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
           OWNER="jia57b"
