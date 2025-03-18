@@ -180,36 +180,50 @@ jobs:
             echo "$run"
           }
 
+          check_workflow_by_id() {
+            local id=$1
+            curl -s -H "Authorization: token $TOKEN" \
+              "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$id" | \
+              jq '.'
+          }
+
+          result=$(check_workflow_status)
+          echo "--------- print result ----------"
+          echo "$result"
+          
+          # If no live run is found, the result will be an empty object "{}"
+          if [ "$(echo "$result" | jq -r 'if . == {} or . == null then "empty" else "found" end')" = "empty" ]; then
+            echo "No in-progress workflow found. Exiting."
+            exit 1
+          fi
+
+          run_status=$(echo "$result" | jq -r '.status')
+          run_conclusion=$(echo "$result" | jq -r '.conclusion')
+          echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
+
+          run_id=$(echo "$result" | jq -r '.id')
+          echo "Found in_progress workflow with ID: $id"
+
           attempt=1
           while [ $attempt -le $MAX_RETRIES ]; do
-            echo "Checking workflow run status (attempt $attempt)..."
-            
-            result=$(check_workflow_status)
-            echo "--------- print result ----------"
-            echo "$result"
-            
-            # If no live run is found, the result will be an empty object "{}"
-            if [ "$(echo "$result" | jq -r 'if . == {} or . == null then "empty" else "found" end')" = "empty" ]; then
-              echo "No live workflow run found yet."
-            else
-              run_status=$(echo "$result" | jq -r '.status')
-              run_conclusion=$(echo "$result" | jq -r '.conclusion')
+            result=$(check_workflow_by_id $run_id)
+            status=$(echo "$result" | jq -r '.status')
+            conclusion=$(echo "$result" | jq -r '.conclusion')
 
-              echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
-
-              if [ "$run_status" == "completed" ]; then
-                echo "Workflow run completed with conclusion: ${run_conclusion}"
-                if [ "$run_conclusion" != "success" ]; then
-                  echo "Workflow did not succeed. Exiting."
-                  exit 1
-                fi
-                break
+            if [ "$run_status" == "completed" ]; then
+              echo "Workflow run completed with conclusion: ${run_conclusion}"
+              if [ "$run_conclusion" != "success" ]; then
+                echo "Workflow did not succeed. Exiting."
+                exit 1
               fi
+              break
             fi
+          fi
 
-            echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
-            sleep $SLEEP_INTERVAL
-            attempt=$((attempt + 1))
+          echo "Workflow run is still in progress or not found. Waiting for ${SLEEP_INTERVAL} seconds..."
+          sleep $SLEEP_INTERVAL
+          attempt=$((attempt + 1))
+
           done
 
           if [ $attempt -gt $MAX_RETRIES ]; then
