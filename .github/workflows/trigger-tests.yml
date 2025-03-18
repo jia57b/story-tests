@@ -206,16 +206,14 @@ jobs:
 
           attempt=1
           while [ $attempt -le $MAX_RETRIES ]; do
-            result=$(check_workflow_by_id $run_id)
-            echo "--------- print result check_workflow_by_id  ----------"
-            echo "$result"
-            status=$(echo "$result" | jq -r '.status')
-            conclusion=$(echo "$result" | jq -r '.conclusion')
-            echo "Current status: ${run_status}, conclusion: ${run_conclusion}"
+            result_by_id=$(check_workflow_by_id $run_id)
+            status_by_id=$(echo "$result_by_id" | jq -r '.status')
+            conclusion_by_id=$(echo "$result_by_id" | jq -r '.conclusion')
+            echo "Current status: ${status_by_id}, conclusion: ${conclusion_by_id}"
 
-            if [ "$run_status" == "completed" ]; then
+            if [ "$status_by_id" == "completed" ]; then
               echo "Workflow run completed with conclusion: ${run_conclusion}"
-              if [ "$run_conclusion" != "success" ]; then
+              if [ "$conclusion_by_id" != "success" ]; then
                 echo "Workflow did not succeed. Exiting."
                 exit 1
               fi
