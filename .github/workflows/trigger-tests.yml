@@ -114,41 +114,45 @@ jobs:
             
             console.log("Already trigger workflow, waiting...");
 
+  # wait-test-nodes-stop:
+  #   needs: stop-test-nodes
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Waiting for workflow to complete
+  #       uses: actions/github-script@v6
+  #       with:
+  #         github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
+  #         script: |
+  #           const workflowId = ${{ needs.stop-test-nodes.outputs.workflow_id }};
+  #           let status = "queued";
+            
+  #           console.log(`Waiting ${workflowId} complete...`);
+            
+  #           while (status === "queued" || status === "in_progress") {
+  #             await new Promise(resolve => setTimeout(resolve, 10000)); // checking every 10 seconds
+              
+  #             const { data } = await github.rest.actions.getWorkflowRun({
+  #               owner: 'jia57b',
+  #               repo: 'test-node-launcher',
+  #               run_id: workflowId
+  #             });
+              
+  #             status = data.status;
+  #             console.log(`workflow status: ${status} (${data.conclusion || 'running'})`);
+              
+  #             // if the workflow is completed but not success, set the action as failed
+  #             if (status === "completed" && data.conclusion !== "success") {
+  #               core.setFailed(`remote workflow result: ${data.conclusion}`);
+  #               return;
+  #             }
+  #           }
+            
+  #           console.log("Remote workflow succeed!");
+
   wait-test-nodes-stop:
     needs: stop-test-nodes
     runs-on: ubuntu-latest
     steps:
-      # - name: Waiting for workflow to complete
-      #   uses: actions/github-script@v6
-      #   with:
-      #     github-token: ${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}
-      #     script: |
-      #       const workflowId = ${{ needs.stop-test-nodes.outputs.workflow_id }};
-      #       let status = "queued";
-            
-      #       console.log(`Waiting ${workflowId} complete...`);
-            
-      #       while (status === "queued" || status === "in_progress") {
-      #         await new Promise(resolve => setTimeout(resolve, 10000)); // checking every 10 seconds
-              
-      #         const { data } = await github.rest.actions.getWorkflowRun({
-      #           owner: 'jia57b',
-      #           repo: 'test-node-launcher',
-      #           run_id: workflowId
-      #         });
-              
-      #         status = data.status;
-      #         console.log(`workflow status: ${status} (${data.conclusion || 'running'})`);
-              
-      #         // if the workflow is completed but not success, set the action as failed
-      #         if (status === "completed" && data.conclusion !== "success") {
-      #           core.setFailed(`remote workflow result: ${data.conclusion}`);
-      #           return;
-      #         }
-      #       }
-            
-      #       console.log("Remote workflow succeed!");
-
       - name: Verify the above workflow was completed successfully
       id: verify-workflow
       shell: bash
