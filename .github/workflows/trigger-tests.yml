@@ -182,7 +182,7 @@ jobs:
 
           check_workflow_by_id() {
             local id=$1
-            curl -s -H "Authorization: token $TOKEN" \
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
               "https://api.github.com/repos/$OWNER/$REPO/actions/runs/$id" | \
               jq '.'
           }
