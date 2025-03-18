@@ -158,12 +158,13 @@ jobs:
         shell: bash
         run: |
           #!/bin/bash
+          set -x
 
           GITHUB_TOKEN="${{ secrets.PAT_FOR_WORKFLOW_DISPATCH }}"
           OWNER="jia57b"
           REPO="test-node-launcher"
           TRIGGER_EVENT="repository_dispatch"
-          MAX_RETRIES=60
+          MAX_RETRIES=2
           SLEEP_INTERVAL=20
 
           check_workflow_status() {
