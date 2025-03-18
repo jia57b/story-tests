@@ -188,6 +188,7 @@ jobs:
             echo "Checking workflow run status (attempt $attempt)..."
             
             result=$(check_workflow_status)
+            echo "$result"
             
             # If no live run is found, the result will be an empty object "{}"
             if [ "$(echo "$result" | jq -r 'if . == {} then "empty" else "found" end')" = "empty" ]; then
