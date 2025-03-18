@@ -163,7 +163,7 @@ jobs:
           OWNER="jia57b"
           REPO="test-node-launcher"
           TRIGGER_EVENT="repository_dispatch"
-          MAX_RETRIES=2
+          MAX_RETRIES=50
           SLEEP_INTERVAL=20
 
           check_workflow_status() {
@@ -187,6 +187,7 @@ jobs:
             echo "Checking workflow run status (attempt $attempt)..."
             
             result=$(check_workflow_status)
+            echo "--------- print result ----------"
             echo "$result"
             
             # If no live run is found, the result will be an empty object "{}"
